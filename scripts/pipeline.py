@@ -38,7 +38,7 @@ def main():
     if 'device' in raw_config:
         device = torch.device(raw_config['device'])
     else:
-        device = torch.device('cuda:1')
+        device = torch.device('cuda:0')
     
     timer = zero.Timer()
     timer.run()

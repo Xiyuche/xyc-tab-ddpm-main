@@ -1,7 +1,7 @@
 parent_dir = "exp/diabetes/tvae"
 real_data_path = "data/diabetes/"
 seed = 0
-device = "cuda:1"
+device = "cuda:0"
 
 [train_params]
 lr = 5.723631879975606e-05

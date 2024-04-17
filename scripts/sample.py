@@ -31,7 +31,7 @@ def sample(
     T_dict = None,
     num_numerical_features = 0,
     disbalance = None,
-    device = torch.device('cuda:1'),
+    device = torch.device('cuda:0'),
     seed = 0,
     change_val = False
 ):

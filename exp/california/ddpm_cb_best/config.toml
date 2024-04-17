@@ -3,7 +3,7 @@ parent_dir = "exp/california/ddpm_cb_best"
 real_data_path = "data/california/"
 num_numerical_features = 8
 model_type = "mlp"
-device = "cuda:1"
+device = "cuda:0"
 
 [model_params]
 d_in = 9

@@ -1,7 +1,7 @@
 parent_dir = "exp/miniboone/tvae"
 real_data_path = "data/miniboone/"
 seed = 0
-device = "cuda:1"
+device = "cuda:0"
 
 [train_params]
 lr = 0.000664515187310261

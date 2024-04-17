@@ -1,7 +1,7 @@
 parent_dir = "exp/house/tvae"
 real_data_path = "data/house/"
 seed = 0
-device = "cuda:1"
+device = "cuda:0"
 
 [train_params]
 lr = 0.0014569517316450873

@@ -3,7 +3,7 @@ parent_dir = "exp/miniboone/ddpm_cb_best"
 real_data_path = "data/miniboone/"
 num_numerical_features = 50
 model_type = "mlp"
-device = "cuda:1"
+device = "cuda:0"
 
 [model_params]
 d_in = 50

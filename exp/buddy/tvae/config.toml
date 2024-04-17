@@ -1,7 +1,7 @@
 parent_dir = "exp/buddy/tvae"
 real_data_path = "data/buddy/"
 seed = 0
-device = "cuda:1"
+device = "cuda:0"
 
 [train_params]
 lr = 0.0016961264607506202

@@ -3,7 +3,7 @@ parent_dir = "exp/king/check"
 real_data_path = "data/king/"
 num_numerical_features = 17
 model_type = "mlp"
-device = "cuda:1"
+device = "cuda:0"
 
 [model_params]
 d_in = 30

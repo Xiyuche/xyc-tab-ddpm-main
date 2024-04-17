@@ -1,7 +1,7 @@
 parent_dir = "exp/wilt/ctabgan-plus"
 real_data_path = "data/wilt/"
 seed = 0
-device = "cuda:1"
+device = "cuda:0"
 
 [train_params]
 lr = 0.0002993957976860954

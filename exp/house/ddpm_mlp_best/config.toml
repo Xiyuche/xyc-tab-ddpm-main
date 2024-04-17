@@ -3,7 +3,7 @@ parent_dir = "exp/house/ddpm_mlp_best"
 real_data_path = "data/house/"
 model_type = "mlp"
 num_numerical_features = 16
-device = "cuda:1"
+device = "cuda:0"
 
 [model_params]
 d_in = 17

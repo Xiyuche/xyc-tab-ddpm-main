@@ -1,7 +1,7 @@
 parent_dir = "exp/default/ctabgan"
 real_data_path = "data/default/"
 seed = 0
-device = "cuda:1"
+device = "cuda:0"
 
 [train_params]
 lr = 0.00011098666649406564

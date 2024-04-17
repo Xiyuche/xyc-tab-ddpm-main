@@ -3,7 +3,7 @@ parent_dir = "exp/higgs-small/check"
 real_data_path = "data/higgs-small/"
 model_type = "mlp"
 num_numerical_features = 28
-device = "cuda:1"
+device = "cuda:0"
 
 [model_params]
 d_in = 28

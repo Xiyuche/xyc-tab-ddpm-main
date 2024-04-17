@@ -1,7 +1,7 @@
 parent_dir = "exp/insurance/tvae"
 real_data_path = "data/insurance/"
 seed = 0
-device = "cuda:1"
+device = "cuda:0"
 
 [train_params]
 lr = 0.0006796970164894311
