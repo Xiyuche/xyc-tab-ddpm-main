@@ -9,6 +9,7 @@ import lib
 from pprint import pprint
 from lib import concat_features, read_pure_data, get_catboost_config, read_changed_val
 
+# used in evalutating the performance
 def train_catboost(
     parent_dir,
     real_data_path,
