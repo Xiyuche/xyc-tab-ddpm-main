@@ -35,6 +35,7 @@ def sample(
     seed = 0,
     change_val = False
 ):
+    device = torch.device('cpu')
     zero.improve_reproducibility(seed)
 
     T = lib.Transformations(**T_dict)
@@ -71,7 +72,7 @@ def sample(
         gaussian_loss_type=gaussian_loss_type, scheduler=scheduler, device=device
     )
 
-    device = torch.device('cpu')
+
     diffusion.to(device)
     diffusion.eval()
     
