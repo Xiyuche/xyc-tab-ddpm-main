@@ -31,7 +31,7 @@ def sample(
     T_dict = None,
     num_numerical_features = 0,
     disbalance = None,
-    device = torch.device('cuda:0'),
+    device = torch.device('cpu'),
     seed = 0,
     change_val = False
 ):
@@ -71,6 +71,7 @@ def sample(
         gaussian_loss_type=gaussian_loss_type, scheduler=scheduler, device=device
     )
 
+    device = torch.device('cpu')
     diffusion.to(device)
     diffusion.eval()
     
