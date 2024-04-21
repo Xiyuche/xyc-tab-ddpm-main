@@ -958,6 +958,10 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             # deal with categorical part
             if has_cat:
                 log_z = self.p_sample(model_out_cat, log_z, t, out_dict)
+            # Assume m denotes the mask for the known region, (m-1) denotes the unknown region
+            # Here we mask the denoised x_{t}, to get the denoised unknown region: (m-1)·z_norm
+            # for known region, we calculate it by noising process, m·x_{t-1}^{known}
+            # and we get the real x_{t-1} for denoising MLP from: x_{t-1} = (m-1)·z_norm + m·x_{t-1}^{known}
 
         print()
         z_ohe = torch.exp(log_z).round()
