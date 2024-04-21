@@ -935,6 +935,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             uniform_logits = torch.zeros((b, len(self.num_classes_expanded)), device=device)
             log_z = self.log_sample_categorical(uniform_logits)
 
+        # y is an array of the target distribution specified by y_dist(is a ratio)
         y = torch.multinomial(
             y_dist,
             num_samples=b,
@@ -947,11 +948,14 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             model_out = self._denoise_fn(
                 torch.cat([z_norm, log_z], dim=1).float(),
                 t,
-                **out_dict
+                **out_dict #specif label y for each dataframe
             )
+            #split model_out into numerical and categorical
             model_out_num = model_out[:, :self.num_numerical_features]
             model_out_cat = model_out[:, self.num_numerical_features:]
+            # calculate new numerical part distribution mean
             z_norm = self.gaussian_p_sample(model_out_num, z_norm, t, clip_denoised=False)['sample']
+            # deal with categorical part
             if has_cat:
                 log_z = self.p_sample(model_out_cat, log_z, t, out_dict)
 
@@ -991,3 +995,4 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         y_gen = torch.cat(all_y, dim=0)[:num_samples]
 
         return x_gen, y_gen
+
