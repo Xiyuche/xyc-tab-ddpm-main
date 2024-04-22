@@ -168,7 +168,10 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             self.log_1_min_cumprod_alpha, t, x_start.shape
         )
         return mean, variance, log_variance
-    
+
+    # calculate the diffused dataset from timestep = 0 to timestep = t
+    # data forma is unclear: is the dataset calculated wholly?
+    # be care of the data shape restriction and t related variables
     def gaussian_q_sample(self, x_start, t, noise=None):
         if noise is None:
             noise = torch.randn_like(x_start)
