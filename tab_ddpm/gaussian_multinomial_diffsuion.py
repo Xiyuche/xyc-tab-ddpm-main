@@ -928,6 +928,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         b = num_samples
         device = self.log_alpha.device
         z_norm = torch.randn((b, self.num_numerical_features), device=device)
+        # mask = get_mask(z_norm) mask for known region
 
         has_cat = self.num_classes[0] != 0
         log_z = torch.zeros((b, 0), device=device).float()

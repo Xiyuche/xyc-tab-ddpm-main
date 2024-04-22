@@ -7,6 +7,7 @@ from tab_ddpm import GaussianMultinomialDiffusion
 from utils_train import get_model, make_dataset, update_ema
 import lib
 import pandas as pd
+import pickle
 
 class Trainer:
     def __init__(self, diffusion, train_iter, lr, weight_decay, steps, device=torch.device('cuda:0')):
@@ -99,6 +100,7 @@ def train(
 
     T = lib.Transformations(**T_dict)
 
+    # After this make dataset, the dataset we get is transformed
     dataset = make_dataset(
         real_data_path,
         T,
@@ -106,6 +108,9 @@ def train(
         is_y_cond=model_params['is_y_cond'],
         change_val=change_val
     )
+    # using pickle to save dataset file
+    with open('ExperimentLocalData/dataset_churn2.pkl', 'wb') as file:
+        pickle.dump(dataset, file)
 
     K = np.array(dataset.get_category_sizes('train'))
     if len(K) == 0 or T_dict['cat_encoding'] == 'one-hot':
