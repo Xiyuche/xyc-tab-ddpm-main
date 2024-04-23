@@ -607,10 +607,10 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         log_x_cat_t = x_cat
         if x_num.shape[1] > 0:
             noise = torch.randn_like(x_num)
-            x_num_t = self.gaussian_q_sample(x_num, t, noise=noise)
+            x_num_t = self.gaussian_q_sample(x_num, t, noise=noise)  # calculate x_num_t
         if x_cat.shape[1] > 0:
-            log_x_cat = index_to_log_onehot(x_cat.long(), self.num_classes)
-            log_x_cat_t = self.q_sample(log_x_start=log_x_cat, t=t)
+            log_x_cat = index_to_log_onehot(x_cat.long(), self.num_classes)     #convert cat part index to log onehot
+            log_x_cat_t = self.q_sample(log_x_start=log_x_cat, t=t)  # calculate x_cat_t
         
         x_in = torch.cat([x_num_t, log_x_cat_t], dim=1)
 
@@ -932,9 +932,9 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
     @torch.no_grad()
     def sample(self, num_samples, y_dist):
-        b = num_samples
+        b = num_samples # b = 6400 for X_train
         device = self.log_alpha.device
-        z_norm = torch.randn((b, self.num_numerical_features), device=device)
+        z_norm = torch.randn((b, self.num_numerical_features), device=device)   # initialize z_norm to be totally random
         # mask = get_mask(z_norm) mask for known region
 
         has_cat = self.num_classes[0] != 0
@@ -950,6 +950,10 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             replacement=True
         )
         out_dict = {'y': y.long().to(device)}
+        # Load X_num_train, size = (6400,7)
+        # Load the conditional y from X_num_train dataset, which is y_train.npy, give it to out_dict
+        # Load X_cat_train
+        # create mask denotes the known part of the dataset, size = (6400,7)
         for i in reversed(range(0, self.num_timesteps)):
             print(f'Sample timestep {i:4d}', end='\r')
             t = torch.full((b,), i, device=device, dtype=torch.long)
@@ -958,12 +962,13 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
                 t,
                 **out_dict #specif label y for each dataframe
             )
-            #split model_out into numerical and categorical
+            # split model_out into numerical and categorical
             model_out_num = model_out[:, :self.num_numerical_features]
             model_out_cat = model_out[:, self.num_numerical_features:]
             # calculate new numerical part distribution mean
             z_norm = self.gaussian_p_sample(model_out_num, z_norm, t, clip_denoised=False)['sample']
-            # deal with categorical part
+            # z_norm = z_norm * (1 - mask) + gaussian_q_sample(X_num_train, t or t - 1, noise=None) * mask
+            # Categorical part
             if has_cat:
                 log_z = self.p_sample(model_out_cat, log_z, t, out_dict)
             # Assume m denotes the mask for the known region, (m-1) denotes the unknown region
@@ -978,7 +983,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             z_cat = ohe_to_categories(z_ohe, self.num_classes)
         sample = torch.cat([z_norm, z_cat], dim=1).cpu()
         return sample, out_dict
-    
+
     def sample_all(self, num_samples, batch_size, y_dist, ddim=False):
         if ddim:
             print('Sample using DDIM.')

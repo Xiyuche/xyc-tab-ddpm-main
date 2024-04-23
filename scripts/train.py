@@ -146,7 +146,7 @@ def train(
         device=device
     )
     diffusion.to(device)
-    diffusion.train()
+    diffusion.train() #set to training
 
     trainer = Trainer(
         diffusion,
