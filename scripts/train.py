@@ -89,10 +89,11 @@ def train(
     scheduler = 'cosine',
     T_dict = None,
     num_numerical_features = 0,
-    device = torch.device('cuda:0'),
+    device = torch.device('cpu'),
     seed = 0,
     change_val = False
 ):
+    device = torch.device('cpu')
     real_data_path = os.path.normpath(real_data_path)
     parent_dir = os.path.normpath(parent_dir)
 
