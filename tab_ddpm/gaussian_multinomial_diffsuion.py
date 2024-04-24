@@ -6,6 +6,7 @@ and https://github.com/ehoogeboom/multinomial_diffusion
 import torch.nn.functional as F
 import torch
 import math
+import pickle
 
 import numpy as np
 from .utils import *
@@ -932,10 +933,10 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
     @torch.no_grad()
     def sample(self, num_samples, y_dist):
-        b = num_samples # b = 6400 for X_train
+        b = num_samples     # b = 6400 for X_train
+        b = 6400    # overwrite to churn2-train
         device = self.log_alpha.device
         z_norm = torch.randn((b, self.num_numerical_features), device=device)   # initialize z_norm to be totally random
-        # mask = get_mask(z_norm) mask for known region
 
         has_cat = self.num_classes[0] != 0
         log_z = torch.zeros((b, 0), device=device).float()
@@ -943,17 +944,41 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             uniform_logits = torch.zeros((b, len(self.num_classes_expanded)), device=device)
             log_z = self.log_sample_categorical(uniform_logits)
 
-        # y is an array of the target distribution specified by y_dist(is a ratio)
-        y = torch.multinomial(
-            y_dist,
-            num_samples=b,
-            replacement=True
-        )
+        # # y is an array of the target distribution specified by y_dist(is a ratio)
+        # y = torch.multinomial(
+        #     y_dist,
+        #     num_samples=b,
+        #     replacement=True
+        # )
+
+        # Load the data from a pickle file
+        with open('ExperimentLocalData/dataset_churn2.pkl', 'rb') as file:
+            loaded_dataset = pickle.load(file)
+
+        # Load X_num_train, X_cat_train, and y
+        # Convert numerical features to tensor and ensure type is float32
+        x_num_start = torch.tensor(loaded_dataset.X_num['train'], dtype=torch.float32).to(device)
+
+        # Convert categorical features to tensor and ensure type is float32
+        x_cat_start = torch.tensor(loaded_dataset.X_cat['train'], dtype=torch.float32).to(device)
+
+        # Convert categorical data to log one-hot encoding
+        x_cat_log_start = index_to_log_onehot(x_cat_start.long(), self.num_classes)  # Convert to long for indexing in one-hot
+
+        # Load and convert labels, ensuring type is long for classification use
+        y = torch.tensor(loaded_dataset.y['train'], dtype=torch.int64)
+
+        # Prepare output dictionary with target variable 'y'
         out_dict = {'y': y.long().to(device)}
-        # Load X_num_train, size = (6400,7)
-        # Load the conditional y from X_num_train dataset, which is y_train.npy, give it to out_dict
-        # Load X_cat_train
+
+
         # create mask denotes the known part of the dataset, size = (6400,7)
+        probability_known = 0.3
+
+        mask_num_known = torch.bernoulli(torch.full(x_num_start.shape, probability_known, device=device))
+
+        X_num_known = x_num_start * mask_num_known
+
         for i in reversed(range(0, self.num_timesteps)):
             print(f'Sample timestep {i:4d}', end='\r')
             t = torch.full((b,), i, device=device, dtype=torch.long)
@@ -968,14 +993,17 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             # calculate new numerical part distribution mean
             z_norm = self.gaussian_p_sample(model_out_num, z_norm, t, clip_denoised=False)['sample']
             # z_norm = z_norm * (1 - mask) + gaussian_q_sample(X_num_train, t or t - 1, noise=None) * mask
-            # Categorical part
+            if t[0] - 1 >= 0:
+                z_norm = z_norm * (1 - mask_num_known) + self.gaussian_q_sample(x_num_start, t - 1) * mask_num_known
+            else:
+                z_norm = z_norm * (1 - mask_num_known) + x_num_start * mask_num_known
+            # calculate new categorical part
             if has_cat:
-                log_z = self.p_sample(model_out_cat, log_z, t, out_dict)
-            # Assume m denotes the mask for the known region, (m-1) denotes the unknown region
-            # Here we mask the denoised x_{t}, to get the denoised unknown region: (m-1)·z_norm
-            # for known region, we calculate it by noising process, m·x_{t-1}^{known}
-            # and we get the real x_{t-1} for denoising MLP from: x_{t-1} = (m-1)·z_norm + m·x_{t-1}^{known}
-
+                # log_z = self.p_sample(model_out_cat, log_z, t, out_dict)
+                if t[0] - 1 >= 0:
+                    log_z = self.q_sample(log_x_start=x_cat_log_start,t=t - 1)      # log_z should be calculated by q_sample when it is known
+                else:
+                    log_z = x_cat_log_start
         print()
         z_ohe = torch.exp(log_z).round()
         z_cat = log_z
