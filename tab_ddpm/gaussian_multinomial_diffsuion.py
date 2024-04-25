@@ -991,37 +991,45 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
 
         # create mask denotes the known part of the dataset, size = (6400,7)
-        probability_known = 0.3
+        probability_known = 0.95
 
         mask_num_known = torch.bernoulli(torch.full(x_num_start.shape, probability_known, device=device))
+        mask_num_known = torch.tensor(np.load('SampleOutcome/mask_095_Resample_10uu.npy')).to(device)
 
         X_num_known = x_num_start * mask_num_known
 
         for i in reversed(range(0, self.num_timesteps)):
-            print(f'Sample timestep {i:4d}', end='\r')
-            t = torch.full((b,), i, device=device, dtype=torch.long)
-            model_out = self._denoise_fn(
-                torch.cat([z_norm, log_z], dim=1).float(),
-                t,
-                **out_dict #specif label y for each dataframe
-            )
-            # split model_out into numerical and categorical
-            model_out_num = model_out[:, :self.num_numerical_features]
-            model_out_cat = model_out[:, self.num_numerical_features:]
-            # calculate new numerical part distribution mean
-            z_norm = self.gaussian_p_sample(model_out_num, z_norm, t, clip_denoised=False)['sample']
-            # z_norm = z_norm * (1 - mask) + gaussian_q_sample(X_num_train, t or t - 1, noise=None) * mask
-            if t[0] - 1 >= 0:
-                z_norm = z_norm * (1 - mask_num_known) + self.gaussian_q_sample(x_num_start, t - 1) * mask_num_known
-            else:
-                z_norm = z_norm * (1 - mask_num_known) + x_num_start * mask_num_known
-            # calculate new categorical part
-            if has_cat:
-                # log_z = self.p_sample(model_out_cat, log_z, t, out_dict)
+            u_times = 15
+            for u in range(0, u_times):
+                print(f'Sample timestep {i:4d}', end='\r')
+                t = torch.full((b,), i, device=device, dtype=torch.long)
+                model_out = self._denoise_fn(
+                    torch.cat([z_norm, log_z], dim=1).float(),
+                    t,
+                    **out_dict #specif label y for each dataframe
+                )
+                # split model_out into numerical and categorical
+                model_out_num = model_out[:, :self.num_numerical_features]
+                model_out_cat = model_out[:, self.num_numerical_features:]
+                # calculate new numerical part distribution mean
+                z_norm = self.gaussian_p_sample(model_out_num, z_norm, t, clip_denoised=False)['sample']
+                # z_norm = z_norm * (1 - mask) + gaussian_q_sample(X_num_train, t or t - 1, noise=None) * mask
                 if t[0] - 1 >= 0:
-                    log_z = self.q_sample(log_x_start=x_cat_log_start,t=t - 1)      # log_z should be calculated by q_sample when it is known
+                    z_norm = z_norm * (1 - mask_num_known) + self.gaussian_q_sample(x_num_start, t - 1) * mask_num_known
                 else:
-                    log_z = x_cat_log_start
+                    z_norm = z_norm * (1 - mask_num_known) + x_num_start * mask_num_known
+                # calculate new categorical part
+                if has_cat:
+                    # log_z = self.p_sample(model_out_cat, log_z, t, out_dict)
+                    if t[0] - 1 >= 0:
+                        log_z = self.q_sample(log_x_start=x_cat_log_start,t=t - 1)      # log_z should be calculated by q_sample when it is known
+                    else:
+                        log_z = x_cat_log_start     # if t[0] == 0 , we are from x_0 to x_{-1} which is original
+                if u < u_times and t[0] >= 0:
+                    # diffuse  x_{t-1} = [z_norm, log_z] back to x_{t}
+                    z_norm = diffuse_step(z_norm, self.BETAS, t)
+                    log_z = self.q_sample(log_x_start=x_cat_log_start, t=t)
+
         print()
         z_ohe = torch.exp(log_z).round()
         z_cat = log_z
