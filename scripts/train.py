@@ -93,7 +93,7 @@ def train(
     seed = 0,
     change_val = False
 ):
-    device = torch.device('cpu')
+    device = torch.device('cuda:0')
     real_data_path = os.path.normpath(real_data_path)
     parent_dir = os.path.normpath(parent_dir)
 

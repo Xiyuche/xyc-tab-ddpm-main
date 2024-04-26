@@ -66,7 +66,7 @@ class BaseSynthesizer:
     def save(self, path):
         """Save the model in the passed `path`."""
         device_backup = self._device
-        self.set_device(torch.device('cpu'))
+        self.set_device(torch.device('cuda:0'))
         torch.save(self, path)
         self.set_device(device_backup)
 
