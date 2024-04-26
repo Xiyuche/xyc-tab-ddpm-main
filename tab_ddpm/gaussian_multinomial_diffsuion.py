@@ -956,7 +956,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
 
     @torch.no_grad()
-    def sample(self, num_samples, y_dist):
+    def sample(self, num_samples, y_dist, u_times , jump_length ):
         b = num_samples     # b = 6400 for X_train
         b = 6400    # overwrite to churn2-train
         device = self.log_alpha.device
@@ -1004,9 +1004,9 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
         X_num_known = x_num_start * mask_num_known
 
-        jump_length = 3
+        # jump_length = 3
         for i in reversed(range(jump_length - 1, self.num_timesteps)):
-            u_times = 10
+            # u_times = 10
             for u in range(0, u_times):
                 for j in range(0, jump_length):
                     # denoise for lenth j
@@ -1051,6 +1051,16 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         if has_cat:
             z_cat = ohe_to_categories(z_ohe, self.num_classes)
         sample = torch.cat([z_norm, z_cat], dim=1).cpu()
+
+        # Convert the PyTorch tensor to a NumPy array
+        sample_np = sample.numpy()
+
+        # Define the filename dynamically based on u_times and jump_length
+        filename = f"Resample_{u_times}u_{jump_length}j.npy"
+
+        # Save the NumPy array to a file
+        np.save(filename, sample_np)
+
         return sample, out_dict
 
     def sample_all(self, num_samples, batch_size, y_dist, ddim=False):
@@ -1066,7 +1076,9 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         all_samples = []
         num_generated = 0
         while num_generated < num_samples:
-            sample, out_dict = sample_fn(b, y_dist)
+            for u_times in range(1, 21):  # 1 to 20 inclusive
+                for jump_length in range(1, 21):  # 1 to 20 inclusive
+                    sample, out_dict = sample_fn(b, y_dist, u_times, jump_length)
             mask_nan = torch.any(sample.isnan(), dim=1)
             sample = sample[~mask_nan]
             out_dict['y'] = out_dict['y'][~mask_nan]
