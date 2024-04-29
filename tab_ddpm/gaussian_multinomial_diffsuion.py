@@ -1075,9 +1075,10 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         all_y = []
         all_samples = []
         num_generated = 0
+        sampling_points = [1, 5, 10, 15, 20, 25]
         while num_generated < num_samples:
-            for u_times in range(1, 21):  # 1 to 20 inclusive
-                for jump_length in range(1, 21):  # 1 to 20 inclusive
+            for u_times in sampling_points:
+                for jump_length in sampling_points:
                     sample, out_dict = sample_fn(b, y_dist, u_times, jump_length)
             mask_nan = torch.any(sample.isnan(), dim=1)
             sample = sample[~mask_nan]
