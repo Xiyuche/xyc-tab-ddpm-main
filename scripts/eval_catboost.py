@@ -56,7 +56,7 @@ def train_catboost(
 
     elif eval_type == 'synthetic':
         print(f'loading synthetic data: {parent_dir}')
-        X_num, X_cat, y = read_pure_data(synthetic_data_path)
+        X_num, X_cat, y = read_pure_data(synthetic_data_path) #default_train
 
     elif eval_type == 'real':
         print('loading real data...')
@@ -66,8 +66,8 @@ def train_catboost(
         raise "Choose eval method"
 
     if not change_val:
-        X_num_val, X_cat_val, y_val = read_pure_data(real_data_path, 'val')
-    X_num_test, X_cat_test, y_test = read_pure_data(real_data_path, 'test')
+        X_num_val, X_cat_val, y_val = read_pure_data(real_data_path, 'val') # validate on real_dataset
+    X_num_test, X_cat_test, y_test = read_pure_data(real_data_path, 'test') # test on real_dataset
 
     D = lib.Dataset(
         {'train': X_num, 'val': X_num_val, 'test': X_num_test} if X_num is not None else None,
