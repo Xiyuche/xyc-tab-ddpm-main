@@ -46,6 +46,7 @@ def eval_seeds(
         elif sampling_method == "tvae":
             shutil.copy2(parent_dir / "tvae.obj", temp_config["parent_dir"])
 
+        n_datasets = 1
         for sample_seed in range(n_datasets):
             temp_config['sample']['seed'] = sample_seed
             lib.dump_config(temp_config, dir_ / "config.toml")

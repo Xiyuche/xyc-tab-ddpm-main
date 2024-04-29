@@ -41,8 +41,8 @@ cat_encoding = "__none__"
 y_policy = "default"
 
 [sample]
-num_samples = 26000
-batch_size = 10000
+num_samples = 2
+batch_size = 2
 seed = 0
 
 [eval.type]

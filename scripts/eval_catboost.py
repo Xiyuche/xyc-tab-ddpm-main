@@ -56,7 +56,13 @@ def train_catboost(
 
     elif eval_type == 'synthetic':
         print(f'loading synthetic data: {parent_dir}')
-        X_num, X_cat, y = read_pure_data(synthetic_data_path) #default_train
+        # X_num, X_cat, y = read_pure_data(synthetic_data_path) #default_train
+        # X_num = np.load('Resample_to_origin/MeanImputation.npy')    # load imputated X_train
+        # X_num = np.load('Resample_to_origin/Origin_20u_20j_095.npy')
+        # X_num = np.load('Resample_to_origin/GroundTruth.npy')
+        X_num = np.load('Resample_to_origin/Origin_1u_1j_095.npy')
+        X_cat = np.load('data/churn2/X_cat_train.npy')  # load # real X category train
+        y = np.load('ExperimentLocalData/y_train.npy')  # load real Y train
 
     elif eval_type == 'real':
         print('loading real data...')
