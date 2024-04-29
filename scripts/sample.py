@@ -77,30 +77,9 @@ def sample(
     diffusion.eval()
     
     _, empirical_class_dist = torch.unique(torch.from_numpy(D.y['train']), return_counts=True)
-    # empirical_class_dist = empirical_class_dist.float() + torch.tensor([-5000., 10000.]).float()
-    if disbalance == 'fix':
-        empirical_class_dist[0], empirical_class_dist[1] = empirical_class_dist[1], empirical_class_dist[0]
-        x_gen, y_gen = diffusion.sample_all(num_samples, batch_size, empirical_class_dist.float(), ddim=False)
+    # # empirical_class_dist = empirical_class_dist.float() + torch.tensor([-5000., 10000.]).float()
 
-    elif disbalance == 'fill':
-        ix_major = empirical_class_dist.argmax().item()
-        val_major = empirical_class_dist[ix_major].item()
-        x_gen, y_gen = [], []
-        for i in range(empirical_class_dist.shape[0]):
-            if i == ix_major:
-                continue
-            distrib = torch.zeros_like(empirical_class_dist)
-            distrib[i] = 1
-            num_samples = val_major - empirical_class_dist[i].item()
-            x_temp, y_temp = diffusion.sample_all(num_samples, batch_size, distrib.float(), ddim=False)
-            x_gen.append(x_temp)
-            y_gen.append(y_temp)
-        
-        x_gen = torch.cat(x_gen, dim=0)
-        y_gen = torch.cat(y_gen, dim=0)
-
-    else:
-        x_gen, y_gen = diffusion.sample_all(num_samples, batch_size, empirical_class_dist.float(), ddim=False)
+    # x_gen, y_gen = diffusion.sample_all(num_samples, batch_size, empirical_class_dist.float(), ddim=False)
 
 
     # try:
@@ -113,7 +92,16 @@ def sample(
     #         num_samples=8,
     #         replacement=True
     #     )
-    X_gen, y_gen = x_gen.numpy(), y_gen.numpy()
+
+    # Here load X_gen and Y_gen here by modifying codes below
+
+    # X_gen, y_gen = x_gen.numpy(), y_gen.numpy()
+    # X_num_train = np.load('ExperimentLocalData/X_num_train.npy')
+    # X_cat_train = np.load('ExperimentLocalData/X_cat_train.npy')
+    # X_gen = np.concatenate((X_num_train, X_cat_train), axis=1)
+    X_gen = np.load('data_archive/Resample_1u_1j.npy')  # Resample size = (6400,11)
+    y_gen = np.load('ExperimentLocalData/y_train.npy')
+
 
     ###
     # X_num_unnorm = X_gen[:, :num_numerical_features]
@@ -153,6 +141,7 @@ def sample(
         if len(disc_cols):
             X_num = round_columns(X_num_real, X_num, disc_cols)
 
+# Here save the X_num or X_cat or Y_train
     if num_numerical_features != 0:
         print("Num shape: ", X_num.shape)
         np.save(os.path.join(parent_dir, 'X_num_train'), X_num)
