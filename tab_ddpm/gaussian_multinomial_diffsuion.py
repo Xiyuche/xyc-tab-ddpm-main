@@ -997,16 +997,17 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
 
         # create mask denotes the known part of the dataset, size = (6400,7)
-        probability_known = 0.95
+        probability_known = 0.60
 
-        mask_num_known = torch.bernoulli(torch.full(x_num_start.shape, probability_known, device=device))
-        mask_num_known = torch.tensor(np.load('SampleOutcome/mask_095_Resample_10uu.npy')).to(device)
+        # mask_num_known = torch.bernoulli(torch.full(x_num_start.shape, probability_known, device=device))
+        # np.save('Churn-Experiment-2-060/Mask_060.npy',mask_num_known)
+        mask_num_known = torch.tensor(np.load('Churn-Experiment-2-060/Mask_060.npy')).to(device)
 
         X_num_known = x_num_start * mask_num_known
 
-        jump_length = 3
+        jump_length = 1
         for i in reversed(range(jump_length - 1, self.num_timesteps)):
-            u_times = 10
+            u_times = 1
             for u in range(0, u_times):
                 for j in range(0, jump_length):
                     # denoise for lenth j
