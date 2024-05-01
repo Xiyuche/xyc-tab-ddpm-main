@@ -83,6 +83,34 @@ def diffuse_multiple_steps(x_t, betas, t, j):
         x_t = diffuse_step(x_t, betas, t + step)
     return x_t
 
+
+def expand_mask_for_ohe_dataset(mask, num_classes):
+    """
+    Expands a mask to be compatible with a one-hot encoded dataset. Each entry in the mask is replicated
+    based on the number of categories specified for each feature.
+
+    Parameters:
+        mask (np.ndarray): The original mask array where each row needs to be expanded.
+        num_classes (np.ndarray): Array of integers where each element is the number of categories in the corresponding feature.
+
+    Returns:
+        np.ndarray: Expanded mask compatible with one-hot encoded data.
+    """
+    # Start index for the new columns in the expanded_mask
+    expanded_mask = np.zeros((mask.shape[0], np.sum(num_classes)), dtype=mask.dtype)
+
+    # Start index for the new columns in the expanded_mask
+    start_idx = 0
+
+    for col, cat in enumerate(num_classes):
+        # Replicate each column's value `cat` times
+        for i in range(cat):
+            expanded_mask[:, start_idx + i] = mask[:, col]
+        # Update start index for the next set of columns
+        start_idx += cat
+
+    return expanded_mask
+
 class GaussianMultinomialDiffusion(torch.nn.Module):
     def __init__(
             self,
@@ -417,6 +445,12 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         log_sample = self.log_sample_categorical(log_EV_qxt_x0)
 
         return log_sample
+
+    def q_sample_multi_step(self, log_x_t_minus_1, t, j):
+        for step in range(j):
+            log_x_t_minus_1 = self.q_sample_single_step(log_x_t_minus_1, t + step)
+        return log_x_t_minus_1
+
 
     def predict_start(self, model_out, log_x_t, t, out_dict):
 
@@ -1019,11 +1053,17 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         # create mask denotes the known part of the dataset, size = (6400,7)
         probability_known = 0.60
 
-        # mask_num_known = torch.bernoulli(torch.full(x_num_start.shape, probability_known, device=device))
-        # np.save('Churn-Experiment-2-060/Mask_060.npy',mask_num_known)
-        mask_num_known = torch.tensor(np.load('Churn-Experiment-2-060/Mask_060.npy')).to(device)
+        x_start = torch.cat((x_num_start, x_cat_start), dim=1)
+        # mask = torch.bernoulli(torch.full(x_start.shape, probability_known, device=device))
+        # np.save('FullChurn-exp-060/Mask_060.npy',mask)
+        mask = np.load('FullChurn-exp-060/Mask_060.npy')
+        mask_num_known = mask[:, :self.num_numerical_features]
+        mask_cat_known_origin = mask[:, self.num_numerical_features:]
 
-        X_num_known = x_num_start * mask_num_known
+        # mask_num_known = torch.tensor(np.load('Churn-Experiment-2-060/Mask_060.npy')).to(device)
+
+        mask_cat_known = torch.tensor(expand_mask_for_ohe_dataset(mask_cat_known_origin, self.num_classes)).to(device)
+
 
         jump_length = 1
         for i in reversed(range(jump_length - 1, self.num_timesteps)):
@@ -1051,11 +1091,11 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
                         z_norm = z_norm * (1 - mask_num_known) + x_num_start * mask_num_known
                     # calculate new categorical part
                     if has_cat:
-                        # log_z = self.p_sample(model_out_cat, log_z, t, out_dict)
+                        log_z = self.p_sample(model_out_cat, log_z, t, out_dict)    # getting log(z_{t-1})
                         if t[0] - 1 >= 0:
-                            log_z = self.q_sample(log_x_start=x_cat_log_start,t=t - 1)      # log_z should be calculated by q_sample when it is known
+                            log_z = log_z * (1 - mask_cat_known) + self.q_sample(log_x_start=x_cat_log_start, t=t - 1) * mask_cat_known
                         else:
-                            log_z = x_cat_log_start     # if t[0] == 0 , we are from x_0 to x_{-1} which is original
+                            log_z = log_z * (1 - mask_cat_known) + x_cat_log_start * mask_cat_known
                     # if it is the last one of this u-loop and i is not the last, break and get to new u-loop
                     if u == u_times - 1 and i > jump_length - 1:
                         break
@@ -1063,7 +1103,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
                 if u < u_times - 1 and t[0] >= 0:
                     # diffuse  x_{t-1} = [z_norm, log_z] back to x_{t - 1 + j}
                     z_norm = diffuse_multiple_steps(z_norm, self.BETAS, t, jump_length)
-                    log_z = self.q_sample(log_x_start=x_cat_log_start, t=t - 1 + jump_length)
+                    log_z = self.q_sample_multi_step(log_z, t, jump_length)
                     print(f'deffuse from x_{t[0] - 1} to x_{t[0] - 1 + jump_length}')
 
         print()
