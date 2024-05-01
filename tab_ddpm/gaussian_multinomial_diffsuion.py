@@ -398,6 +398,26 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
         return log_probs
 
+    def q_pred_single_step(self, log_x_t_minus_1, t):
+        beta_t = extract(self.BETAS, t, log_x_t_minus_1.shape)
+        log_beta_t = torch.log(beta_t)
+        log_1_min_beta = torch.log(1 - beta_t)
+
+        # log_probs = q( x_{t} | x_{t-1} ) = log( (1 - beta) * x_{t-1} + beta / K )
+        log_probs = log_add_exp(
+            log_1_min_beta + log_x_t_minus_1,
+            log_beta_t - torch.log(self.num_classes_expanded)
+        )
+
+        return log_probs
+
+    def q_sample_single_step(self, log_x_min_1, t):
+        log_EV_qxt_x0 = self.q_pred_single_step(log_x_min_1, t)
+
+        log_sample = self.log_sample_categorical(log_EV_qxt_x0)
+
+        return log_sample
+
     def predict_start(self, model_out, log_x_t, t, out_dict):
 
         # model_out = self._denoise_fn(x_t, t.to(x_t.device), **out_dict)
