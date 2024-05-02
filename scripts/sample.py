@@ -100,7 +100,7 @@ def sample(
         y_gen = torch.cat(y_gen, dim=0)
 
     else:
-        x_gen, y_gen = diffusion.sample_all(num_samples, batch_size, empirical_class_dist.float(), ddim=False)
+        x_gen, y_gen = diffusion.sample_all(num_samples, batch_size, empirical_class_dist.float(), D=D, ddim=False)
 
 
     # try:

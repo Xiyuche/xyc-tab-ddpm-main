@@ -1010,7 +1010,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
 
     @torch.no_grad()
-    def sample(self, num_samples, y_dist):
+    def sample(self, num_samples, y_dist, dataset):
         b = num_samples     # b = 6400 for X_train
         b = 6400    # overwrite to churn2-train
         device = self.log_alpha.device
@@ -1030,8 +1030,9 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         # )
 
         # Load the data from a pickle file
-        with open('ExperimentLocalData/dataset_churn2.pkl', 'rb') as file:
-            loaded_dataset = pickle.load(file)
+        # with open('ExperimentLocalData/dataset_churn2.pkl', 'rb') as file:
+        #     loaded_dataset = pickle.load(file)
+        loaded_dataset = dataset
 
         # Load X_num_train, X_cat_train, and y
         # Convert numerical features to tensor and ensure type is float32
@@ -1056,7 +1057,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         x_start = torch.cat((x_num_start, x_cat_start), dim=1)
         # mask = torch.bernoulli(torch.full(x_start.shape, probability_known, device=device))
         # np.save('FullChurn-exp-060/Mask_060.npy',mask)
-        mask = np.load('FullChurn-exp-060/Mask_060.npy')
+        mask = np.load('Full_Experiments/FullChurn-exp-060/Mask_060.npy')
         mask_num_known = mask[:, :self.num_numerical_features]
         mask_cat_known_origin = mask[:, self.num_numerical_features:]
 
@@ -1114,7 +1115,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         sample = torch.cat([z_norm, z_cat], dim=1).cpu()
         return sample, out_dict
 
-    def sample_all(self, num_samples, batch_size, y_dist, ddim=False):
+    def sample_all(self, num_samples, batch_size, y_dist, D, ddim=False):
         if ddim:
             print('Sample using DDIM.')
             sample_fn = self.sample_ddim
@@ -1127,7 +1128,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         all_samples = []
         num_generated = 0
         while num_generated < num_samples:
-            sample, out_dict = sample_fn(b, y_dist)
+            sample, out_dict = sample_fn(b, y_dist, D)
             mask_nan = torch.any(sample.isnan(), dim=1)
             sample = sample[~mask_nan]
             out_dict['y'] = out_dict['y'][~mask_nan]
