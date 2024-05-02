@@ -1012,7 +1012,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
     @torch.no_grad()
     def sample(self, num_samples, y_dist, dataset):
         b = num_samples     # b = 6400 for X_train
-        b = 6400    # overwrite to churn2-train
+        b = dataset.X_num['train'].shape[0]    # overwrite to churn2-train
         device = self.log_alpha.device
         z_norm = torch.randn((b, self.num_numerical_features), device=device)   # initialize z_norm to be totally random
 
