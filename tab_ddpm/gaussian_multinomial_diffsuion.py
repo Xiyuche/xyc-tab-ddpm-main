@@ -1011,7 +1011,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
 
     @torch.no_grad()
-    def sample(self, num_samples, y_dist, dataset):
+    def sample(self, num_samples, y_dist, dataset, is_y_cond):
         b = num_samples     # b = 6400 for X_train
         b = dataset.X_num['train'].shape[0]    # overwrite to churn2-train
         device = self.log_alpha.device
@@ -1119,6 +1119,9 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
         filename = f'{exp_dir}/Resample_{u_times}u_{jump_length}j.npy'
         np.save(filename, sample)
+        if is_y_cond:
+            filename_y = f'{exp_dir}/Resample_{u_times}u_{jump_length}j_y.npy'
+            np.save(filename_y, out_dict)
         print(f'Resample done: Saved Resample as {filename}')
         if np.isnan(sample).any():
             print("Alert: NaN values detected].")
@@ -1128,7 +1131,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         sys.exit("Resample done.")
         return sample, out_dict
 
-    def sample_all(self, num_samples, batch_size, y_dist, D, ddim=False):
+    def sample_all(self, num_samples, batch_size, y_dist, D, is_y_cond, ddim=False):
         if ddim:
             print('Sample using DDIM.')
             sample_fn = self.sample_ddim
@@ -1141,7 +1144,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         all_samples = []
         num_generated = 0
         while num_generated < num_samples:
-            sample, out_dict = sample_fn(b, y_dist, D)
+            sample, out_dict = sample_fn(b, y_dist, D, is_y_cond)
             mask_nan = torch.any(sample.isnan(), dim=1)
             sample = sample[~mask_nan]
             out_dict['y'] = out_dict['y'][~mask_nan]
