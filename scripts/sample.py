@@ -1,3 +1,5 @@
+import sys
+
 import torch
 import numpy as np
 import zero
@@ -99,7 +101,8 @@ def sample(
     # X_num_train = np.load('ExperimentLocalData/X_num_train.npy')
     # X_cat_train = np.load('ExperimentLocalData/X_cat_train.npy')
     # X_gen = np.concatenate((X_num_train, X_cat_train), axis=1)
-    X_gen = np.load('data_archive/Resample_1u_1j.npy')  # Resample size = (6400,11)
+    file_path = ''
+    X_gen = np.load(file_path)  # Resample size = (6400,11)
     y_gen = np.load('ExperimentLocalData/y_train.npy')
 
 
@@ -141,10 +144,30 @@ def sample(
         if len(disc_cols):
             X_num = round_columns(X_num_real, X_num, disc_cols)
 
+    parent_dir = os.path.dirname(file_path)
+
+    # Base filename without the extension
+    base_filename = os.path.splitext(os.path.basename(file_path))[0]
+
+    # Save each component in the same parent directory with appended type
+    X_num_path = f'{parent_dir}/{base_filename}_num.npy'
+    np.save(X_num_path, X_num)
+    print("Saved X_num at path:", X_num_path)
+
+    X_cat_path = f'{parent_dir}/{base_filename}_cat.npy'
+    np.save(X_cat_path, X_cat)
+    print("Saved X_cat at path:", X_cat_path)
+
+    y_gen_path = f'{parent_dir}/{base_filename}_y_gen.npy'
+    np.save(y_gen_path, y_gen)
+    print("Saved y_gen at path:", y_gen_path)
+
+    sys.exit('Transformation done.')
+
 # Here save the X_num or X_cat or Y_train
-    if num_numerical_features != 0:
-        print("Num shape: ", X_num.shape)
-        np.save(os.path.join(parent_dir, 'X_num_train'), X_num)
-    if num_numerical_features < X_gen.shape[1]:
-        np.save(os.path.join(parent_dir, 'X_cat_train'), X_cat)
-    np.save(os.path.join(parent_dir, 'y_train'), y_gen)
+#     if num_numerical_features != 0:
+#         print("Num shape: ", X_num.shape)
+#         np.save(os.path.join(parent_dir, 'X_num_train'), X_num)
+#     if num_numerical_features < X_gen.shape[1]:
+#         np.save(os.path.join(parent_dir, 'X_cat_train'), X_cat)
+#     np.save(os.path.join(parent_dir, 'y_train'), y_gen)
