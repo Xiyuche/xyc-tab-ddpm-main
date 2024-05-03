@@ -106,7 +106,7 @@ def sample(
     if model_params['is_y_cond']:   # only load y_gen if y is conditioned in MLP, X_gen has no y info
         exp_dir = os.path.dirname(file_path)
         sample_name = os.path.splitext(os.path.basename(file_path))[0]
-        y_gen = np.load(f'{exp_dir}/{sample_name}_y.npy')
+        y_gen = np.load(f'{exp_dir}/{sample_name}_y.npy', allow_pickle=True)
 
 
     ###
