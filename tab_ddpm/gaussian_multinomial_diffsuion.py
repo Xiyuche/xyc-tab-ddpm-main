@@ -1121,7 +1121,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         np.save(filename, sample)
         if is_y_cond:
             filename_y = f'{exp_dir}/Resample_{u_times}u_{jump_length}j_y.npy'
-            np.save(filename_y, out_dict)
+            np.save(filename_y, loaded_dataset.y['train'])
         print(f'Resample done: Saved Resample as {filename}')
         if np.isnan(sample).any():
             print("Alert: NaN values detected].")
