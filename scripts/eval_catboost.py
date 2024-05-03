@@ -64,6 +64,29 @@ def train_catboost(
         X_cat = np.load('data/churn2/X_cat_train.npy')  # load # real X category train
         y = np.load('ExperimentLocalData/y_train.npy')  # load real Y train
 
+        load_by_resample_name = True
+        if load_by_resample_name:
+
+            resample_root_path = ''
+
+            exp_dir = os.path.dirname(resample_root_path)
+            base_filename = os.path.splitext(os.path.basename(resample_root_path))[0]
+
+            # Save each component in the same parent directory with appended type
+            X_num_path = f'{exp_dir}/{base_filename}_num.npy'
+            X_num = np.load(X_num_path)
+            print("Loaded X_num at path:", X_num_path)
+
+            X_cat_path = f'{exp_dir}/{base_filename}_cat.npy'
+            X_cat = np.load(X_cat_path, allow_pickle=True)
+            print("Loaded X_cat at path:", X_cat_path)
+
+            y_gen_path = f'{exp_dir}/{base_filename}_y_gen.npy'
+            y = np.load(y_gen_path)
+            print("Loaded y_gen at path:", y_gen_path)
+
+
+
     elif eval_type == 'real':
         print('loading real data...')
         if not change_val:
