@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch
 import math
 import pickle
+import sys
 
 import numpy as np
 from .utils import *
@@ -1050,14 +1051,18 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         # Prepare output dictionary with target variable 'y'
         out_dict = {'y': y.long().to(device)}
 
-
-        # create mask denotes the known part of the dataset, size = (6400,7)
-        probability_known = 0.60
+        exp_dir = 'Full_Experiments/FullAbalone-exp-090'
+        new_mask = False
+        jump_length = 2
+        u_times = 2
+        probability_known = 0.90
 
         x_start = torch.cat((x_num_start, x_cat_start), dim=1)
-        # mask = torch.bernoulli(torch.full(x_start.shape, probability_known, device=device))
-        # np.save('FullChurn-exp-060/Mask_060.npy',mask)
-        mask = np.load('Full_Experiments/FullChurn-exp-060/Mask_060.npy')
+        if new_mask:
+            mask = torch.bernoulli(torch.full(x_start.shape, probability_known, device=device))
+            np.save(f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy', mask)
+        mask = np.load(f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy')
+
         mask_num_known = mask[:, :self.num_numerical_features]
         mask_cat_known_origin = mask[:, self.num_numerical_features:]
 
@@ -1066,9 +1071,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         mask_cat_known = torch.tensor(expand_mask_for_ohe_dataset(mask_cat_known_origin, self.num_classes)).to(device)
 
 
-        jump_length = 1
         for i in reversed(range(jump_length - 1, self.num_timesteps)):
-            u_times = 1
             for u in range(0, u_times):
                 for j in range(0, jump_length):
                     # denoise for lenth j
@@ -1113,6 +1116,16 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         if has_cat:
             z_cat = ohe_to_categories(z_ohe, self.num_classes)
         sample = torch.cat([z_norm, z_cat], dim=1).cpu()
+
+        filename = f'{exp_dir}/Resample_{u_times}u_{jump_length}j.npy'
+        np.save(filename, sample)
+        print(f'Resample done: Saved Resample as {filename}')
+        if np.isnan(sample).any():
+            print("Alert: NaN values detected].")
+        else:
+            print("Nan: OK.")
+
+        sys.exit("Resample done.")
         return sample, out_dict
 
     def sample_all(self, num_samples, batch_size, y_dist, D, ddim=False):
