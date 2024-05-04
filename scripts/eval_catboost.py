@@ -78,8 +78,12 @@ def train_catboost(
             print("Loaded X_num at path:", X_num_path)
 
             X_cat_path = f'{exp_dir}/{base_filename}_cat.npy'
-            X_cat = np.load(X_cat_path, allow_pickle=True)
-            print("Loaded X_cat at path:", X_cat_path)
+            if os.path.exists(X_cat_path):
+                X_cat = np.load(X_cat_path, allow_pickle=True)
+                print("Loaded X_cat at path:", X_cat_path)
+            else:
+                X_cat = None
+                print("No X_cat detected as：", X_cat_path)
 
             y_gen_path = f'{exp_dir}/{base_filename}_y_gen.npy'
             y = np.load(y_gen_path)
