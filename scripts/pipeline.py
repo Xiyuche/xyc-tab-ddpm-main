@@ -32,6 +32,8 @@ def main():
     parser.add_argument('--sample', action='store_true',  default=False)
     parser.add_argument('--eval', action='store_true',  default=False)
     parser.add_argument('--change_val', action='store_true',  default=False)
+    # parse the file path and pass to sample
+    parser.add_argument('--file_path', type=str, default=False)
 
     args = parser.parse_args()
     raw_config = lib.load_config(args.config)
@@ -72,7 +74,8 @@ def main():
             num_numerical_features=raw_config['num_numerical_features'],
             device=device,
             seed=raw_config['sample'].get('seed', 0),
-            change_val=args.change_val
+            change_val=args.change_val,
+            file_path=args.file_path
         )
 
     save_file(os.path.join(raw_config['parent_dir'], 'info.json'), os.path.join(raw_config['real_data_path'], 'info.json'))

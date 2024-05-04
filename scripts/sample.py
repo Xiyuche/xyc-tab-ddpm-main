@@ -35,7 +35,8 @@ def sample(
     disbalance = None,
     device = torch.device('cpu'),
     seed = 0,
-    change_val = False
+    change_val = False,
+    file_path = ''
 ):
     device = torch.device('cpu')
     zero.improve_reproducibility(seed)
@@ -101,7 +102,7 @@ def sample(
     # X_num_train = np.load('ExperimentLocalData/X_num_train.npy')
     # X_cat_train = np.load('ExperimentLocalData/X_cat_train.npy')
     # X_gen = np.concatenate((X_num_train, X_cat_train), axis=1)
-    file_path = ''
+    # file_path = '' # file_path is passed from argument
     X_gen = np.load(file_path)  # Resample size = (6400,11)
     if model_params['is_y_cond']:   # only load y_gen if y is conditioned in MLP, X_gen has no y info
         exp_dir = os.path.dirname(file_path)
