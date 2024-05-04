@@ -157,9 +157,10 @@ def sample(
     np.save(X_num_path, X_num)
     print("Saved X_num at path:", X_num_path)
 
-    X_cat_path = f'{parent_dir}/{base_filename}_cat.npy'
-    np.save(X_cat_path, X_cat)
-    print("Saved X_cat at path:", X_cat_path)
+    if num_numerical_features < X_gen.shape[1]:     #save cat file only has_cat
+        X_cat_path = f'{parent_dir}/{base_filename}_cat.npy'
+        np.save(X_cat_path, X_cat)
+        print("Saved X_cat at path:", X_cat_path)
 
     y_gen_path = f'{parent_dir}/{base_filename}_y_gen.npy'
     np.save(y_gen_path, y_gen)
