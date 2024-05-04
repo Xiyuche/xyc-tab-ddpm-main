@@ -17,6 +17,7 @@ def train_catboost(
     seed = 0,
     params = None,
     change_val = True,
+    file_path = '',
     device = None # dummy
 ):
     zero.improve_reproducibility(seed)
@@ -67,7 +68,7 @@ def train_catboost(
         load_by_resample_name = True
         if load_by_resample_name:
 
-            resample_root_path = ''
+            resample_root_path = file_path
 
             exp_dir = os.path.dirname(resample_root_path)
             base_filename = os.path.splitext(os.path.basename(resample_root_path))[0]

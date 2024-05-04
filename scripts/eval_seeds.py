@@ -26,7 +26,8 @@ def eval_seeds(
     model_type="catboost",
     n_datasets=1,
     dump=True,
-    change_val=False
+    change_val=False,
+    file_path = ''
 ):
 
     metrics_seeds_report = lib.SeedsMetricsReport()
@@ -65,7 +66,8 @@ def eval_seeds(
                         eval_type=eval_type,
                         T_dict=T_dict,
                         seed=seed,
-                        change_val=change_val
+                        change_val=change_val,
+                        file_path=file_path
                     )
                 elif model_type == "mlp":
                     T_dict["normalization"] = "quantile"
@@ -105,6 +107,8 @@ def main():
     parser.add_argument('model_type',  type=str, default='catboost')
     parser.add_argument('n_datasets', type=int, default=1)
     parser.add_argument('--no_dump', action='store_false',  default=True)
+    # parse the file_path
+    parser.add_argument('--file_path', type=str, default=False)
 
     args = parser.parse_args()
     raw_config = lib.load_config(args.config)
@@ -115,7 +119,8 @@ def main():
         eval_type=args.eval_type,
         model_type=args.model_type,
         n_datasets=args.n_datasets,
-        dump=args.no_dump
+        dump=args.no_dump,
+        file_path = args.file_path
     )
 
 if __name__ == '__main__':
