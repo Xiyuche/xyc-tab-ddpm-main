@@ -33,6 +33,13 @@ def main():
     parser.add_argument('--eval', action='store_true',  default=False)
     parser.add_argument('--change_val', action='store_true',  default=False)
 
+    # Adding new arguments for the resampling process
+    parser.add_argument('--exp_dir', type=str, help='Experiment directory')
+    parser.add_argument('--new_mask', type=int, help='Flag for generating new mask (0 or 1)')
+    parser.add_argument('--jump_length', type=int, help='Jump length for processing')
+    parser.add_argument('--u_times', type=int, help='Multiplier for u parameter')
+    parser.add_argument('--probability_known', type=float, help='Probability of known data')
+
     args = parser.parse_args()
     raw_config = lib.load_config(args.config)
     if 'device' in raw_config:
@@ -60,6 +67,7 @@ def main():
     if args.sample:
         sample(
             num_samples=raw_config['sample']['num_samples'],
+            resample_args=args,
             batch_size=raw_config['sample']['batch_size'],
             disbalance=raw_config['sample'].get('disbalance', None),
             **raw_config['diffusion_params'],

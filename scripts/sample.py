@@ -19,6 +19,7 @@ def to_good_ohe(ohe, X):
 
 def sample(
     parent_dir,
+    resample_args,
     real_data_path = 'data/higgs-small',
     batch_size = 2000,
     num_samples = 0,
@@ -100,7 +101,7 @@ def sample(
         y_gen = torch.cat(y_gen, dim=0)
 
     else:
-        x_gen, y_gen = diffusion.sample_all(num_samples, batch_size, empirical_class_dist.float(), D=D, is_y_cond=model_params['is_y_cond'], ddim=False)
+        x_gen, y_gen = diffusion.sample_all(num_samples, batch_size, empirical_class_dist.float(), D=D, is_y_cond=model_params['is_y_cond'], ddim=False, resample_args=resample_args)
 
 
     # try:

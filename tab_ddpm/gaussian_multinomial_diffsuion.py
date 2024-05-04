@@ -1011,7 +1011,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
 
     @torch.no_grad()
-    def sample(self, num_samples, y_dist, dataset, is_y_cond):
+    def sample(self, num_samples, y_dist, dataset, is_y_cond, resample_args):
         b = num_samples     # b = 6400 for X_train
         b = dataset.X_num['train'].shape[0]    # overwrite to churn2-train
         device = self.log_alpha.device
@@ -1052,11 +1052,11 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         # Prepare output dictionary with target variable 'y'
         out_dict = {'y': y.long().to(device)}
 
-        exp_dir = 'Full_Experiments/FullAbalone-exp-090'
-        new_mask = False
-        jump_length = 2
-        u_times = 2
-        probability_known = 0.90
+        exp_dir = resample_args.exp_dir
+        new_mask = resample_args.new_mask
+        jump_length = resample_args.jump_length
+        u_times = resample_args.u_times
+        probability_known = resample_args.probability_known
 
         if has_cat:
             x_start = torch.cat((x_num_start, x_cat_start), dim=1)
@@ -1136,7 +1136,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         sys.exit("Resample done.")
         return sample, out_dict
 
-    def sample_all(self, num_samples, batch_size, y_dist, D, is_y_cond, ddim=False):
+    def sample_all(self, num_samples, batch_size, y_dist, D, is_y_cond, ddim=False, resample_args=None):
         if ddim:
             print('Sample using DDIM.')
             sample_fn = self.sample_ddim
@@ -1149,7 +1149,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         all_samples = []
         num_generated = 0
         while num_generated < num_samples:
-            sample, out_dict = sample_fn(b, y_dist, D, is_y_cond)
+            sample, out_dict = sample_fn(b, y_dist, D, is_y_cond, resample_args)
             mask_nan = torch.any(sample.isnan(), dim=1)
             sample = sample[~mask_nan]
             out_dict['y'] = out_dict['y'][~mask_nan]
