@@ -1039,11 +1039,12 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         # Convert numerical features to tensor and ensure type is float32
         x_num_start = torch.tensor(loaded_dataset.X_num['train'], dtype=torch.float32).to(device)
 
-        # Convert categorical features to tensor and ensure type is float32
-        x_cat_start = torch.tensor(loaded_dataset.X_cat['train'], dtype=torch.float32).to(device)
+        if has_cat:
+            # Convert categorical features to tensor and ensure type is float32
+            x_cat_start = torch.tensor(loaded_dataset.X_cat['train'], dtype=torch.float32).to(device)
 
-        # Convert categorical data to log one-hot encoding
-        x_cat_log_start = index_to_log_onehot(x_cat_start.long(), self.num_classes)  # Convert to long for indexing in one-hot
+            # Convert categorical data to log one-hot encoding
+            x_cat_log_start = index_to_log_onehot(x_cat_start.long(), self.num_classes)  # Convert to long for indexing in one-hot
 
         # Load and convert labels, ensuring type is long for classification use
         y = torch.tensor(loaded_dataset.y['train'], dtype=torch.int64)
@@ -1057,18 +1058,21 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         u_times = 2
         probability_known = 0.90
 
-        x_start = torch.cat((x_num_start, x_cat_start), dim=1)
+        if has_cat:
+            x_start = torch.cat((x_num_start, x_cat_start), dim=1)
+        else:
+            x_start = x_num_start
         if new_mask:
             mask = torch.bernoulli(torch.full(x_start.shape, probability_known, device=device))
             np.save(f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy', mask)
         mask = np.load(f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy')
 
         mask_num_known = mask[:, :self.num_numerical_features]
-        mask_cat_known_origin = mask[:, self.num_numerical_features:]
 
-        # mask_num_known = torch.tensor(np.load('Churn-Experiment-2-060/Mask_060.npy')).to(device)
-
-        mask_cat_known = torch.tensor(expand_mask_for_ohe_dataset(mask_cat_known_origin, self.num_classes)).to(device)
+        # extract mask for category cols if it has cat
+        if has_cat:
+            mask_cat_known_origin = mask[:, self.num_numerical_features:]
+            mask_cat_known = torch.tensor(expand_mask_for_ohe_dataset(mask_cat_known_origin, self.num_classes)).to(device)
 
 
         for i in reversed(range(jump_length - 1, self.num_timesteps)):
@@ -1107,7 +1111,8 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
                 if u < u_times - 1 and t[0] >= 0:
                     # diffuse  x_{t-1} = [z_norm, log_z] back to x_{t - 1 + j}
                     z_norm = diffuse_multiple_steps(z_norm, self.BETAS, t, jump_length)
-                    log_z = self.q_sample_multi_step(log_z, t, jump_length)
+                    if has_cat:
+                        log_z = self.q_sample_multi_step(log_z, t, jump_length)     # defuse the cat part if it has cat
                     print(f'deffuse from x_{t[0] - 1} to x_{t[0] - 1 + jump_length}')
 
         print()
