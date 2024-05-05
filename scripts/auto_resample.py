@@ -18,7 +18,7 @@ def run_command(command):
 
 
 def main():
-    datasets = ["abalone", "adult", "california", "buddy", "cardio", "churn2", "default", "diabetes", "fb-comments",
+    datasets = ["abalone", "adult", "california", "buddy", "cardio", "churn2", "diabetes", "fb-comments",
                 "gesture", "higgs-small", "house", "insurance", "king", "miniboone", "wilt"]
     known_rates = [0.6, 0.9]  # Example known rates
     u_j_combinations = [(1, 1), (2, 2)]  # Example u, j values

@@ -64,7 +64,7 @@ def betas_for_alpha_bar(num_diffusion_timesteps, alpha_bar, max_beta=0.999):
 
 def diffuse_step(x_t_minus_1, betas, t):
     # Extract the specific beta for the current timestep
-    beta_t = extract(betas, t, x_t_minus_1.shape)
+    beta_t = extract(betas, t, x_t_minus_1.shape).clone().detach().to(torch.device('cuda:0'))
 
     # Calculate the variance of the noise to add
     noise_variance = 1.0 - beta_t
@@ -124,7 +124,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             multinomial_loss_type='vb_stochastic',
             parametrization='x0',
             scheduler='cosine',
-            device=torch.device('cpu')
+            device=torch.device('cuda:0')
         ):
 
         super(GaussianMultinomialDiffusion, self).__init__()
@@ -428,7 +428,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         return log_probs
 
     def q_pred_single_step(self, log_x_t_minus_1, t):
-        beta_t = extract(self.BETAS, t, log_x_t_minus_1.shape)
+        beta_t = extract(self.BETAS, t, log_x_t_minus_1.shape).clone().detach().to(torch.device('cuda:0'))
         log_beta_t = torch.log(beta_t)
         log_1_min_beta = torch.log(1 - beta_t)
 
@@ -1014,7 +1014,8 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
     def sample(self, num_samples, y_dist, dataset, is_y_cond, resample_args):
         b = num_samples     # b = 6400 for X_train
         b = dataset.X_num['train'].shape[0]    # overwrite to churn2-train
-        device = self.log_alpha.device
+        # device = self.log_alpha.device
+        device = torch.device('cuda:0')
         z_norm = torch.randn((b, self.num_numerical_features), device=device)   # initialize z_norm to be totally random
 
         has_cat = self.num_classes[0] != 0
@@ -1064,10 +1065,10 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             x_start = x_num_start
         if new_mask:
             mask = torch.bernoulli(torch.full(x_start.shape, probability_known, device=device))
-            np.save(f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy', mask)
+            np.save(f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy', mask.cpu().numpy())
         mask = np.load(f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy')
 
-        mask_num_known = mask[:, :self.num_numerical_features]
+        mask_num_known = torch.tensor(mask[:, :self.num_numerical_features]).to(device)
 
         # extract mask for category cols if it has cat
         if has_cat:
