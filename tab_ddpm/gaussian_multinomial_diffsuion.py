@@ -2,12 +2,14 @@
 Based on https://github.com/openai/guided-diffusion/blob/main/guided_diffusion
 and https://github.com/ehoogeboom/multinomial_diffusion
 """
+import os.path
 
 import torch.nn.functional as F
 import torch
 import math
 import pickle
 import sys
+from filelock import Timeout, FileLock
 
 import numpy as np
 from .utils import *
@@ -1062,10 +1064,15 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             x_start = torch.cat((x_num_start, x_cat_start), dim=1)
         else:
             x_start = x_num_start
-        if new_mask:
-            mask = torch.bernoulli(torch.full(x_start.shape, probability_known, device=device))
-            np.save(f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy', mask)
-        mask = np.load(f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy')
+
+        mask_file_path = f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy'
+        lock_file_path = f'{mask_file_path}.lock'
+        lock = FileLock(lock_file_path, timeout=10)
+        with lock:
+            if not os.path.exists(mask_file_path):
+                mask = torch.bernoulli(torch.full(x_start.shape, probability_known, device=device))
+                np.save(mask_file_path, mask)
+            mask = np.load(mask_file_path)
 
         mask_num_known = mask[:, :self.num_numerical_features]
 
