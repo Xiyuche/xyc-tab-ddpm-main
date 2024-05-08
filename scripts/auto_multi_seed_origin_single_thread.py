@@ -28,7 +28,7 @@ def transform_resample():
             config_path = f"exp/{dataset}/ddpm_cb_best/config.toml"
             for rate in known_rates:
                 dir_name = f"{dataset}-exp-{int(rate * 100):03d}"
-                exp_dir = f"multi_seed_resample/abalone/AutoResample_{dataset}_seed_{seed}/{dir_name}"
+                exp_dir = f"multi_seed_resample/{dataset}/AutoResample_{dataset}_seed_{seed}/{dir_name}"
                 for (u, j) in u_j_combinations:
                     file_name = f"Resample_{u}u_{j}j.npy"
                     file_path = os.path.join(exp_dir, file_name)
