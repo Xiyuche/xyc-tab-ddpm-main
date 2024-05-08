@@ -1068,6 +1068,7 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
         mask_file_path = f'{exp_dir}/Mask_{int(probability_known * 100):03d}.npy'
         lock_file_path = f'{mask_file_path}.lock'
         lock = FileLock(lock_file_path, timeout=10)
+        torch.manual_seed(resample_args.seed)
         with lock:
             if not os.path.exists(mask_file_path):
                 mask = torch.bernoulli(torch.full(x_start.shape, probability_known, device=device))

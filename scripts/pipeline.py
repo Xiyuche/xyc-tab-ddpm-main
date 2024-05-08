@@ -39,6 +39,7 @@ def main():
     parser.add_argument('--jump_length', type=int, help='Jump length for processing')
     parser.add_argument('--u_times', type=int, help='Multiplier for u parameter')
     parser.add_argument('--probability_known', type=float, help='Probability of known data')
+    parser.add_argument('--seed', type=int)
 
     args = parser.parse_args()
     raw_config = lib.load_config(args.config)
