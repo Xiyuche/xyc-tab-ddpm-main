@@ -37,7 +37,7 @@ def main():
             new_mask = 1 if not os.path.exists(f"{exp_dir}/Mask_{int(rate * 100):03d}.npy") else 0 # new_mask is aborted
 
             for (u, j) in u_j_combinations:
-                command = f"python scripts/pipeline.py --config {config_path} --sample --exp_dir {exp_dir} --u_times {u} --jump_length {j} --new_mask {new_mask} --probability_known {rate}"
+                command = f"python scripts/pipeline.py --config {config_path} --sample --exp_dir {exp_dir} --u_times {u} --jump_length {j} --new_mask {new_mask} --probability_known {rate} --seed 0"
                 commands.append(command)
 
     # Use ThreadPoolExecutor or ProcessPoolExecutor depending on preference
