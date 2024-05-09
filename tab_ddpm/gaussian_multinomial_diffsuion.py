@@ -10,6 +10,7 @@ import math
 import pickle
 import sys
 from filelock import Timeout, FileLock
+from tab_ddpm import scheduler
 
 import numpy as np
 from .utils import *
@@ -1082,46 +1083,83 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
             mask_cat_known_origin = mask[:, self.num_numerical_features:]
             mask_cat_known = torch.tensor(expand_mask_for_ohe_dataset(mask_cat_known_origin, self.num_classes)).to(device)
 
+        # using scheduler
+        times = scheduler.get_schedule_jump(t_T=self.num_timesteps, n_sample=1,
+                               jump_length=jump_length, jump_n_sample=u_times,
+                               jump2_length=1, jump2_n_sample=1,
+                               jump3_length=1, jump3_n_sample=1,
+                               start_resampling=self.num_timesteps)
 
-        for i in reversed(range(jump_length - 1, self.num_timesteps)):
-            for u in range(0, u_times):
-                for j in range(0, jump_length):
-                    # denoise for lenth j
-                    print(f'Sample timestep {i - j:4d}', end='\r')
-                    t = torch.full((b,), i - j, device=device, dtype=torch.long)
-                    print(f'denoise from x_{t[0]} to x_{t[0] - 1}')
-                    model_out = self._denoise_fn(
-                        torch.cat([z_norm, log_z], dim=1).float(),
-                        t,
-                        **out_dict #specif label y for each dataframe
-                    )
-                    # split model_out into numerical and categorical
-                    model_out_num = model_out[:, :self.num_numerical_features]
-                    model_out_cat = model_out[:, self.num_numerical_features:]
-                    # calculate new numerical part distribution mean
-                    z_norm = self.gaussian_p_sample(model_out_num, z_norm, t, clip_denoised=False)['sample']
-                    # z_norm = z_norm * (1 - mask) + gaussian_q_sample(X_num_train, t or t - 1, noise=None) * mask
+        time_pairs = list(zip(times[:-1], times[1:]))
+
+        for t_last, t_cur in time_pairs:
+            if t_last > t_cur:
+                # denoise, from x_{t_last} to x_{t_cur} state
+                t = torch.full((b,), t_last, device=device, dtype=torch.long)
+                model_out = self._denoise_fn(
+                    torch.cat([z_norm, log_z], dim=1).float(),
+                    t,
+                    **out_dict  # specif label y for each dataframe
+                )
+                model_out_num = model_out[:, :self.num_numerical_features]
+                model_out_cat = model_out[:, self.num_numerical_features:]
+                z_norm = self.gaussian_p_sample(model_out_num, z_norm, t, clip_denoised=False)['sample']
+                if t[0] - 1 >= 0:
+                    z_norm = z_norm * (1 - mask_num_known) + self.gaussian_q_sample(x_num_start, t - 1) * mask_num_known
+                else:
+                    z_norm = z_norm * (1 - mask_num_known) + x_num_start * mask_num_known
+                if has_cat:
+                    log_z = self.p_sample(model_out_cat, log_z, t, out_dict)    # getting log(z_{t-1})
                     if t[0] - 1 >= 0:
-                        z_norm = z_norm * (1 - mask_num_known) + self.gaussian_q_sample(x_num_start, t - 1) * mask_num_known
+                        log_z = log_z * (1 - mask_cat_known) + self.q_sample(log_x_start=x_cat_log_start, t=t - 1) * mask_cat_known
                     else:
-                        z_norm = z_norm * (1 - mask_num_known) + x_num_start * mask_num_known
-                    # calculate new categorical part
-                    if has_cat:
-                        log_z = self.p_sample(model_out_cat, log_z, t, out_dict)    # getting log(z_{t-1})
-                        if t[0] - 1 >= 0:
-                            log_z = log_z * (1 - mask_cat_known) + self.q_sample(log_x_start=x_cat_log_start, t=t - 1) * mask_cat_known
-                        else:
-                            log_z = log_z * (1 - mask_cat_known) + x_cat_log_start * mask_cat_known
-                    # if it is the last one of this u-loop and i is not the last, break and get to new u-loop
-                    if u == u_times - 1 and i > jump_length - 1:
-                        break
-                # jump back lenth j, only if this is not the last one of this u-loop
-                if u < u_times - 1 and t[0] >= 0:
-                    # diffuse  x_{t-1} = [z_norm, log_z] back to x_{t - 1 + j}
-                    z_norm = diffuse_multiple_steps(z_norm, self.BETAS, t, jump_length)
-                    if has_cat:
-                        log_z = self.q_sample_multi_step(log_z, t, jump_length)     # defuse the cat part if it has cat
-                    print(f'deffuse from x_{t[0] - 1} to x_{t[0] - 1 + jump_length}')
+                        log_z = log_z * (1 - mask_cat_known) + x_cat_log_start * mask_cat_known
+            else:
+                t = torch.full((b,), t_cur, device=device, dtype=torch.long)
+                z_norm = diffuse_multiple_steps(z_norm, self.BETAS, t, 1)
+                # defuse, from x_{t_last} to x_{t_cur} state
+                if has_cat:
+                    log_z = self.q_sample_multi_step(log_z, t, 1)
+
+        # for i in reversed(range(jump_length - 1, self.num_timesteps)):
+        #     for u in range(0, u_times):
+        #         for j in range(0, jump_length):
+        #             # denoise for lenth j
+        #             print(f'Sample timestep {i - j:4d}', end='\r')
+        #             t = torch.full((b,), i - j, device=device, dtype=torch.long)
+        #             print(f'denoise from x_{t[0]} to x_{t[0] - 1}')
+        #             model_out = self._denoise_fn(
+        #                 torch.cat([z_norm, log_z], dim=1).float(),
+        #                 t,
+        #                 **out_dict #specif label y for each dataframe
+        #             )
+        #             # split model_out into numerical and categorical
+        #             model_out_num = model_out[:, :self.num_numerical_features]
+        #             model_out_cat = model_out[:, self.num_numerical_features:]
+        #             # calculate new numerical part distribution mean
+        #             z_norm = self.gaussian_p_sample(model_out_num, z_norm, t, clip_denoised=False)['sample']
+        #             # z_norm = z_norm * (1 - mask) + gaussian_q_sample(X_num_train, t or t - 1, noise=None) * mask
+        #             if t[0] - 1 >= 0:
+        #                 z_norm = z_norm * (1 - mask_num_known) + self.gaussian_q_sample(x_num_start, t - 1) * mask_num_known
+        #             else:
+        #                 z_norm = z_norm * (1 - mask_num_known) + x_num_start * mask_num_known
+        #             # calculate new categorical part
+        #             if has_cat:
+        #                 log_z = self.p_sample(model_out_cat, log_z, t, out_dict)    # getting log(z_{t-1})
+        #                 if t[0] - 1 >= 0:
+        #                     log_z = log_z * (1 - mask_cat_known) + self.q_sample(log_x_start=x_cat_log_start, t=t - 1) * mask_cat_known
+        #                 else:
+        #                     log_z = log_z * (1 - mask_cat_known) + x_cat_log_start * mask_cat_known
+        #             # if it is the last one of this u-loop and i is not the last, break and get to new u-loop
+        #             if u == u_times - 1 and i > jump_length - 1:
+        #                 break
+        #         # jump back lenth j, only if this is not the last one of this u-loop
+        #         if u < u_times - 1 and t[0] >= 0:
+        #             # diffuse  x_{t-1} = [z_norm, log_z] back to x_{t - 1 + j}
+        #             z_norm = diffuse_multiple_steps(z_norm, self.BETAS, t, jump_length)
+        #             if has_cat:
+        #                 log_z = self.q_sample_multi_step(log_z, t, jump_length)     # defuse the cat part if it has cat
+        #             print(f'deffuse from x_{t[0] - 1} to x_{t[0] - 1 + jump_length}')
 
         print()
         z_ohe = torch.exp(log_z).round()
