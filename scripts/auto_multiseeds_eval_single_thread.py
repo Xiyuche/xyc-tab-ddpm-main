@@ -60,10 +60,10 @@ def save_results_to_json(data, filename='evaluation_results.json'):
 
 def transform_resample():
     # datasets = ["abalone", "adult", "california", "buddy", "cardio", "churn2", "default", "diabetes", "fb-comments",
-                # "gesture", "higgs-small", "house", "insurance", "king", "miniboone", "wilt"]
-    datasets = ["abalone"]
-    known_rates = [0.9]
-    u_j_combinations = [(1, 1), (2, 2), (5, 5), (10, 10), (15, 15)]
+    # "gesture", "higgs-small", "house", "insurance", "king", "miniboone", "wilt"]
+    datasets = ["churn2", "abalone", "adult", "insurance", "king",  "wilt"]
+    known_rates = [0.3, 0.6, 0.8, 0.9, 0.95]
+    u_j_combinations = [(u, j) for u in range(1, 21) for j in range(1, 21) if u == j]
     seeds_num = 5
 
     for seed in range(seeds_num):
@@ -89,11 +89,19 @@ def transform_resample():
                                 'known_rate': rate,
                             }
                             # Dynamically adding each metric from 'val' and 'test' sections
-                            for section, metrics in results.items():
-                                for key, value in metrics.items():
-                                    data[f'{section}_{key}'] = value
-
-                            save_results_to_json(data, filename=f'evaluation_results_{dataset}_seed_{seed}.json')
+                            # for section, metrics in results.items():
+                            #     for key, value in metrics.items():
+                            #         data[f'{section}_{key}'] = value
+                            test_result = results['test']
+                            if 'f1-mean' in test_result:
+                                data['f1-mean'] = test_result['f1-mean']
+                                data['f1-std'] = test_result['f1-std']
+                            else:
+                                data['r2-mean'] = test_result['r2-mean']
+                                data['r2-std'] = test_result['r2-std']
+                            save_results_to_json(data,
+                                                 filename=f'collection_1/{dataset}/AutoResample_{dataset}_seed_{seed}/'
+                                                          f'{dir_name}/evaluation_results_{dataset}_seed_{seed}.json')
 
 
 if __name__ == "__main__":
