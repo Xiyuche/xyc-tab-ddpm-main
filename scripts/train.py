@@ -89,10 +89,11 @@ def train(
     scheduler = 'cosine',
     T_dict = None,
     num_numerical_features = 0,
-    device = torch.device('cuda:0'),
+    device = torch.device('cpu'),
     seed = 0,
     change_val = False
 ):
+    device = torch.device('cpu')
     real_data_path = os.path.normpath(real_data_path)
     parent_dir = os.path.normpath(parent_dir)
 
@@ -108,6 +109,8 @@ def train(
         is_y_cond=model_params['is_y_cond'],
         change_val=change_val
     )
+    mask_known_num = np.load('Retrain/Mask_060.npy')
+    dataset.X_num['train'][mask_known_num == 0] = 0.0
     # using pickle to save dataset file
     with open('ExperimentLocalData/dataset_churn2.pkl', 'wb') as file:
         pickle.dump(dataset, file)

@@ -292,7 +292,11 @@ class GaussianMultinomialDiffusion(torch.nn.Module):
 
         terms = {}
         if self.gaussian_loss_type == 'mse':
-            terms["loss"] = mean_flat((noise - model_out) ** 2)
+            mask = (x_start != 0).float()
+            mse_loss = (noise - model_out) ** 2
+            masked_mse_loss = mse_loss * mask
+            terms["loss"] = mean_flat(masked_mse_loss)
+
         elif self.gaussian_loss_type == 'kl':
             terms["loss"] = self._vb_terms_bpd(
                 model_output=model_out,
