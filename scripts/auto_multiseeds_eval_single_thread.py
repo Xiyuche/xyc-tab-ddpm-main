@@ -13,12 +13,22 @@ def ensure_directory_exists(directory):
 def run_command(command):
     """Run a command using subprocess and capture its output."""
     try:
-        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, text=True)
-        print(f"Successfully executed: {command}")
-        return result.stdout
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        output = []
+        for line in process.stdout:
+            print(line, end='')  # Print each line of the command's stdout in real-time
+            output.append(line)
+        process.stdout.close()
+        return_code = process.wait()
+        if return_code == 0:
+            print(f"Successfully executed: {command}")
+        else:
+            print(f"Error executing {command}: {return_code}")
+        return ''.join(output)
     except subprocess.CalledProcessError as e:
         print(f"Error executing {command}: {e}")
         return None
+
 
 
 import re
@@ -61,17 +71,18 @@ def save_results_to_json(data, filename='evaluation_results.json'):
 def transform_resample():
     # datasets = ["abalone", "adult", "california", "buddy", "cardio", "churn2", "default", "diabetes", "fb-comments",
     # "gesture", "higgs-small", "house", "insurance", "king", "miniboone", "wilt"]
-    datasets = ["churn2", "abalone", "adult", "insurance", "king",  "wilt"]
-    known_rates = [0.3, 0.6, 0.8, 0.9, 0.95]
+    datasets = ["abalone", "adult", "california", "buddy", "cardio", "churn2", "diabetes", "fb-comments",
+                "gesture", "higgs-small", "house", "insurance", "king", "wilt"]
+    known_rates = [0.6]
     u_j_combinations = [(u, j) for u in range(1, 21) for j in range(1, 21) if u == j]
-    seeds_num = 5
+    seeds_num = 2
 
     for seed in range(seeds_num):
         for dataset in datasets:
             config_path = f"exp/{dataset}/ddpm_cb_best/config.toml"
             for rate in known_rates:
                 dir_name = f"{dataset}-exp-{int(rate * 100):03d}"
-                exp_dir = f"multi_seed_resample/{dataset}/AutoResample_{dataset}_seed_{seed}/{dir_name}"
+                exp_dir = f"test_show/AutoResample_{dataset}_seed_{seed}/{dir_name}"
                 for (u, j) in u_j_combinations:
                     file_name = f"Resample_{u}u_{j}j.npy"
                     file_path = os.path.join(exp_dir, file_name)
@@ -100,7 +111,7 @@ def transform_resample():
                                 data['r2-mean'] = test_result['r2-mean']
                                 data['r2-std'] = test_result['r2-std']
                             save_results_to_json(data,
-                                                 filename=f'collection_1/{dataset}/AutoResample_{dataset}_seed_{seed}/'
+                                                 filename=f'test_show/AutoResample_{dataset}_seed_{seed}/'
                                                           f'{dir_name}/evaluation_results_{dataset}_seed_{seed}.json')
 
 
